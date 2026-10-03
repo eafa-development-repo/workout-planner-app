@@ -1,25 +1,45 @@
 {
   "expo": {
-    "name": "workout-planner",
+    "name": "Workout Planner",
     "slug": "workout-planner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
+    "scheme": "workoutplanner",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0C",
+    "primaryColor": "#E9EBEE",
+    "platforms": [
+      "android"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
+      "package": "com.workoutplanner.app",
+      "versionCode": 1,
+      "predictiveBackGestureEnabled": false,
+      "userInterfaceStyle": "dark",
+      "backgroundColor": "#0A0A0C",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0A0C",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": []
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Workout Planner to access your photos so you can attach exercise and food images."
+        }
+      ],
+      "expo-sqlite",
+      "expo-system-ui",
+      "expo-file-system",
+      "expo-font"
+    ]
   }
 }
