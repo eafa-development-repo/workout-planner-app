@@ -115,7 +115,8 @@ export interface Meal {
   name: string;
   createdAt: string;
   updatedAt: string;
-  foodCount: number;
+  /** Macros and calories of the whole meal, already scaled by quantity. */
+  totals: MacroTotals;
 }
 
 export interface MealFood {

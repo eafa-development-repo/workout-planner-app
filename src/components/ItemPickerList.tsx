@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { EmptyState } from './Feedback';
 import { LoadingState } from './Button';
+import { FilterChips } from './FilterChips';
 import { ListScrollView } from './Layout';
 import { Icon } from './Icon';
 import { colors } from '../theme/colors';
@@ -17,6 +18,8 @@ export interface PickerItem {
   photoUri: string | null;
   /** Marks an item that is already used and cannot be added again. */
   disabled?: boolean;
+  /** Bucket used by the filter row, e.g. the muscle group of an exercise. */
+  filterKey?: string;
 }
 
 interface ItemPickerListProps {
@@ -28,6 +31,9 @@ interface ItemPickerListProps {
   onSelect: (id: number) => void;
   /** Rendered above the list, e.g. an inline "new item" button. */
   header?: ReactNode;
+  /** Filter row values, matched against `PickerItem.filterKey`. */
+  filters?: readonly string[];
+  filterLabel?: string;
   bottomInset?: number;
 }
 
@@ -40,22 +46,42 @@ export function ItemPickerList({
   emptyMessage,
   onSelect,
   header,
+  filters,
+  filterLabel = 'All',
   bottomInset = spacing.xxl,
 }: ItemPickerListProps) {
   const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<string | null>(null);
+
+  const filterOptions = useMemo(
+    () => (filters && filters.length > 0 ? [filterLabel, ...filters] : undefined),
+    [filters, filterLabel],
+  );
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter(
-      (item) =>
-        item.title.toLowerCase().includes(term) || item.subtitle.toLowerCase().includes(term),
-    );
-  }, [items, query]);
+    return items.filter((item) => {
+      if (filter && item.filterKey !== filter) return false;
+      if (!term) return true;
+      return (
+        item.title.toLowerCase().includes(term) || item.subtitle.toLowerCase().includes(term)
+      );
+    });
+  }, [filter, items, query]);
 
   return (
     <View style={styles.container}>
       {header ? <View style={styles.header}>{header}</View> : null}
+
+      {filterOptions ? (
+        <FilterChips
+          options={filterOptions}
+          value={filter ?? filterLabel}
+          onChange={(option) => setFilter(option === filterLabel ? null : option)}
+          style={styles.filterRow}
+          accessibilityLabel={filterLabel === 'All' ? 'Filter by group' : `Filter by ${filterLabel}`}
+        />
+      ) : null}
 
       <View style={styles.searchContainer}>
         <Icon name="search" size={18} color={colors.textTertiary} />
@@ -89,7 +115,13 @@ export function ItemPickerList({
         <EmptyState
           icon="search"
           title={items.length === 0 ? emptyTitle : 'No matches'}
-          message={items.length === 0 ? emptyMessage : 'Try a different search term.'}
+          message={
+            items.length === 0
+              ? emptyMessage
+              : filter
+                ? 'No items in this group. Try another filter or a different search term.'
+                : 'Try a different search term.'
+          }
         />
       ) : (
         <ListScrollView bottomInset={bottomInset}>
@@ -151,6 +183,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+  filterRow: {
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.md,
   },

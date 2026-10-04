@@ -11,14 +11,8 @@ import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import type { RootStackScreenProps } from '../../navigation/types';
 import { listWorkouts } from '../../repositories/workoutRepository';
 import type { Workout } from '../../db/types';
-import { formatDateKey, formatDuration } from '../../utils/date';
+import { formatDuration } from '../../utils/date';
 import { formatCount } from '../../utils/format';
-
-function describeDates(workout: Workout): string {
-  if (!workout.startDate) return 'No dates set';
-  const end = workout.endDate && workout.endDate !== workout.startDate ? workout.endDate : null;
-  return `${formatDateKey(workout.startDate)}${end ? ` – ${formatDateKey(end)}` : ''}`;
-}
 
 export function WorkoutsListSection() {
   const nav = useNavigation<RootStackScreenProps<'Tabs'>['navigation']>();
@@ -40,21 +34,18 @@ export function WorkoutsListSection() {
     }
     return (
       <ListGroup>
-        {data.map((workout, index) => {
-          const duration = formatDuration(workout.startDate, workout.endDate);
-          return (
-            <ListRow
-              key={workout.id}
-              last={index === data.length - 1}
-              title={workout.name}
-              subtitle={duration ? `${describeDates(workout)} · ${duration}` : describeDates(workout)}
-              leading={{ type: 'icon', icon: 'barbell' }}
-              meta={formatCount(workout.exerciseCount, 'exercise')}
-              onPress={() => nav.navigate('WorkoutDetail', { workoutId: workout.id })}
-              accessibilityHint="Opens the workout"
-            />
-          );
-        })}
+        {data.map((workout, index) => (
+          <ListRow
+            key={workout.id}
+            last={index === data.length - 1}
+            title={workout.name}
+            subtitle={formatCount(workout.exerciseCount, 'exercise')}
+            leading={{ type: 'icon', icon: 'barbell' }}
+            meta={formatDuration(workout.startDate, workout.endDate)}
+            onPress={() => nav.navigate('WorkoutDetail', { workoutId: workout.id })}
+            accessibilityHint="Opens the workout"
+          />
+        ))}
       </ListGroup>
     );
   }, [data, nav]);
@@ -64,7 +55,7 @@ export function WorkoutsListSection() {
       {loading && data.length === 0 ? (
         <LoadingState label="Loading workouts…" />
       ) : (
-        <ListScrollView>{content}</ListScrollView>
+        <ListScrollView horizontal={false}>{content}</ListScrollView>
       )}
       <Fab accessibilityLabel="Create workout" onPress={() => nav.navigate('WorkoutForm', {})} />
     </View>

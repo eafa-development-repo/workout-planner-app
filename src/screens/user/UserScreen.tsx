@@ -64,7 +64,7 @@ export function UserScreen() {
     <Screen>
       <AppHeader
         title="User"
-        subtitle={user?.goal ? user.goal : 'Your profile and progress'}
+        subtitle={'Your profile and progress'}
         action={
           <HeaderAction
             label="Edit"
@@ -124,46 +124,48 @@ export function UserScreen() {
             </Card>
           ) : (
             <View style={styles.stack}>
-              <Card>
-                <View style={styles.chartSummary}>
-                  <View>
-                    <Text style={styles.chartLabel}>Latest</Text>
-                    <Text style={styles.chartValue}>
-                      {latest ? formatWeight(latest.weight) : '—'}
-                    </Text>
-                  </View>
-                  <View style={styles.chartStats}>
-                    <DeltaPill
-                      label="vs previous"
-                      value={deltaLatest === null ? null : formatDelta(deltaLatest, 'kg')}
-                      tone={deltaLatest === null ? 'neutral' : deltaLatest > 0 ? 'up' : 'down'}
-                    />
-                    <DeltaPill
-                      label="total change"
-                      value={deltaOverall === null ? null : formatDelta(deltaOverall, 'kg')}
-                      tone={deltaOverall === null ? 'neutral' : deltaOverall > 0 ? 'up' : 'down'}
-                    />
+              <Card padded={false}>
+                <View style={styles.chartInner}>
+                  <View style={styles.chartSummary}>
+                    <View>
+                      <Text style={styles.chartLabel}>Latest</Text>
+                      <Text style={styles.chartValue}>
+                        {latest ? formatWeight(latest.weight) : '—'}
+                      </Text>
+                    </View>
+                    <View style={styles.chartStats}>
+                      <DeltaPill
+                        label="vs previous"
+                        value={deltaLatest === null ? null : formatDelta(deltaLatest, 'kg')}
+                        tone={deltaLatest === null ? 'neutral' : deltaLatest > 0 ? 'up' : 'down'}
+                      />
+                      <DeltaPill
+                        label="total change"
+                        value={deltaOverall === null ? null : formatDelta(deltaOverall, 'kg')}
+                        tone={deltaOverall === null ? 'neutral' : deltaOverall > 0 ? 'up' : 'down'}
+                      />
+                    </View>
                   </View>
                 </View>
                 <WeightChart records={records} />
               </Card>
 
               <ListGroup>
-                {records.map((record, index) => (
-                  <ListRow
-                    key={record.id}
-                    last={index === records.length - 1}
-                    title={formatWeight(record.weight)}
-                    subtitle={`${relativeDayLabel(record.recordedAt)} · ${formatDateKey(record.recordedAt)}`}
-                    meta={
-                      previous && index === 0
-                        ? formatDelta(record.weight - previous.weight, 'kg')
-                        : undefined
-                    }
-                    onPress={() => navigation.navigate('WeightForm', { recordId: record.id })}
-                    accessibilityHint="Opens the record editor"
-                  />
-                ))}
+                {records.map((record, index) => {
+                  // Records are newest first, so the next row is the older one.
+                  const older = records[index + 1];
+                  return (
+                    <ListRow
+                      key={record.id}
+                      last={index === records.length - 1}
+                      title={formatWeight(record.weight)}
+                      subtitle={`${relativeDayLabel(record.recordedAt)} · ${formatDateKey(record.recordedAt)}`}
+                      meta={older ? formatDelta(record.weight - older.weight, 'kg') : '—'}
+                      onPress={() => navigation.navigate('WeightForm', { recordId: record.id })}
+                      accessibilityHint="Opens the record editor"
+                    />
+                  );
+                })}
               </ListGroup>
 
               <Text style={styles.hint}>Tap a record to edit or delete it.</Text>
@@ -220,6 +222,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
+    marginBottom: spacing.lg
   },
   avatar: {
     width: 64,
@@ -278,11 +281,14 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textTertiary,
   },
+  chartInner: {
+    padding: spacing.lg,
+    paddingBottom: 0,
+  },
   chartSummary: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: spacing.lg,
   },
   chartLabel: {
     ...typography.label,

@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { Fab, LoadingState } from '../../components/Button';
 import { EmptyState } from '../../components/Feedback';
@@ -10,27 +10,14 @@ import { useQuery } from '../../hooks/useQuery';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import type { RootStackScreenProps } from '../../navigation/types';
 import { listFoods } from '../../repositories/foodRepository';
-import { MEASUREMENT_SHORT, MEASUREMENT_TYPES, type Food, type MeasurementType } from '../../db/types';
-import { colors } from '../../theme/colors';
-import { radius, spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { MEASUREMENT_SHORT, type Food } from '../../db/types';
 import { formatMacro, trimNumber } from '../../utils/format';
-
-type Filter = MeasurementType | 'All';
-
-const FILTERS: Filter[] = ['All', ...MEASUREMENT_TYPES];
 
 export function FoodsListSection() {
   const nav = useNavigation<RootStackScreenProps<'Tabs'>['navigation']>();
-  const [filter, setFilter] = useState<Filter>('All');
   const { data, loading, reload } = useQuery<Food[]>(() => listFoods(), [], []);
 
   useRefreshOnFocus(reload);
-
-  const filtered = useMemo(
-    () => (filter === 'All' ? data : data.filter((food) => food.measurementType === filter)),
-    [data, filter],
-  );
 
   const list = useMemo(() => {
     if (data.length === 0) {
@@ -44,23 +31,12 @@ export function FoodsListSection() {
         />
       );
     }
-    if (filtered.length === 0) {
-      return (
-        <EmptyState
-          icon="filter-outline"
-          title="No matching foods"
-          message="Change the filter or add a new food."
-          actionLabel="New food"
-          onAction={() => nav.navigate('FoodForm', {})}
-        />
-      );
-    }
     return (
       <ListGroup>
-        {filtered.map((food, index) => (
+        {data.map((food, index) => (
           <ListRow
             key={food.id}
-            last={index === filtered.length - 1}
+            last={index === data.length - 1}
             title={food.name}
             subtitle={`per ${trimNumber(food.measureQuantity)} ${MEASUREMENT_SHORT[food.measurementType]} · P ${formatMacro(food.protein)}g · C ${formatMacro(food.carbs)}g · F ${formatMacro(food.fat)}g`}
             leading={{ type: 'image', uri: food.photoUri }}
@@ -71,41 +47,14 @@ export function FoodsListSection() {
         ))}
       </ListGroup>
     );
-  }, [data.length, filtered, nav]);
+  }, [data, nav]);
 
   return (
     <View style={styles.section}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {FILTERS.map((option) => {
-          const active = option === filter;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => setFilter(option)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              style={({ pressed }) => [
-                styles.chip,
-                active && styles.chipActive,
-                pressed && styles.chipPressed,
-              ]}
-            >
-              <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>
-                {option === 'All' ? 'All' : option === 'grams' ? 'Grams' : 'Units'}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
       {loading && data.length === 0 ? (
         <LoadingState label="Loading foods…" />
       ) : (
-        <ListScrollView>{list}</ListScrollView>
+        <ListScrollView horizontal={false}>{list}</ListScrollView>
       )}
 
       <Fab accessibilityLabel="Create food" onPress={() => nav.navigate('FoodForm', {})} />
@@ -116,32 +65,5 @@ export function FoodsListSection() {
 const styles = StyleSheet.create({
   section: {
     flex: 1,
-  },
-  filterRow: {
-    gap: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
-  },
-  chipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  chipPressed: {
-    opacity: 0.7,
-  },
-  chipLabel: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  chipLabelActive: {
-    color: colors.textInverse,
   },
 });

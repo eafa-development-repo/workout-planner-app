@@ -14,9 +14,15 @@ interface WeightChartProps {
   height?: number;
 }
 
+/** Width reserved for the value labels on the left of the plot. */
+const AXIS_WIDTH = 28;
+/** Left inset of the footer, so its labels line up with the plot area. */
+const PLOT_INSET = AXIS_WIDTH + spacing.sm;
+
 /**
- * Dependency-free column chart of the weight history. Bars are scaled between
- * the record minimum and maximum, so small changes stay visible.
+ * Dependency-free column chart of the weight history. It stretches to the full
+ * width of its container, with only a slim value gutter on the left. Bars are
+ * scaled between the record minimum and maximum, so small changes stay visible.
  */
 export function WeightChart({ records, height = 168 }: WeightChartProps) {
   const points = useMemo(
@@ -43,36 +49,38 @@ export function WeightChart({ records, height = 168 }: WeightChartProps) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.axis, { height }]}>
-        <Text style={styles.axisLabel}>{trimNumber(max)}</Text>
-        <Text style={styles.axisLabel}>{trimNumber(mid)}</Text>
-        <Text style={styles.axisLabel}>{trimNumber(min)}</Text>
-      </View>
+      <View style={[styles.plotRow, { height }]}>
+        <View style={styles.axis}>
+          <Text style={styles.axisLabel}>{trimNumber(max)}</Text>
+          <Text style={styles.axisLabel}>{trimNumber(mid)}</Text>
+          <Text style={styles.axisLabel}>{trimNumber(min)}</Text>
+        </View>
 
-      <View style={[styles.plot, { height }]}>
-        <View style={[styles.gridLine, { top: 0 }]} />
-        <View style={[styles.gridLine, { top: '50%' }]} />
-        <View style={[styles.gridLine, { bottom: 0 }]} />
+        <View style={styles.plot}>
+          <View style={[styles.gridLine, { top: 0 }]} />
+          <View style={[styles.gridLine, { top: '50%' }]} />
+          <View style={[styles.gridLine, { bottom: 0 }]} />
 
-        <View style={styles.bars}>
-          {points.map((point, index) => {
-            const isLatest = index === points.length - 1;
-            const ratio = toRatio(point.value);
-            return (
-              <View key={`${point.key}-${index}`} style={styles.barSlot}>
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      // Floor keeps every bar visible even for tiny variations.
-                      height: `${Math.max(ratio * 100, range === 0 ? 50 : 6)}%`,
-                    },
-                    isLatest && styles.barLatest,
-                  ]}
-                />
-              </View>
-            );
-          })}
+          <View style={styles.bars}>
+            {points.map((point, index) => {
+              const isLatest = index === points.length - 1;
+              const ratio = toRatio(point.value);
+              return (
+                <View key={`${point.key}-${index}`} style={styles.barSlot}>
+                  <View
+                    style={[
+                      styles.bar,
+                      {
+                        // Floor keeps every bar visible even for tiny variations.
+                        height: `${Math.max(ratio * 100, range === 0 ? 50 : 6)}%`,
+                      },
+                      isLatest && styles.barLatest,
+                    ]}
+                  />
+                </View>
+              );
+            })}
+          </View>
         </View>
       </View>
 
@@ -89,11 +97,15 @@ export function WeightChart({ records, height = 168 }: WeightChartProps) {
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
+    paddingTop: spacing.lg,
+  },
+  plotRow: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   axis: {
-    width: 40,
+    width: AXIS_WIDTH,
     justifyContent: 'space-between',
     alignItems: 'flex-end',
   },
@@ -138,10 +150,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.silverBright,
   },
   footer: {
-    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: spacing.sm,
+    paddingLeft: PLOT_INSET,
+    paddingRight: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   footerLabel: {
     ...typography.caption,

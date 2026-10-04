@@ -7,7 +7,10 @@ interface MealRow {
   name: string;
   created_at: string;
   updated_at: string;
-  food_count: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  calories: number;
 }
 
 interface MealFoodRow {
@@ -34,7 +37,12 @@ function mapRow(row: MealRow): Meal {
     name: row.name,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    foodCount: row.food_count,
+    totals: {
+      protein: row.protein,
+      carbs: row.carbs,
+      fat: row.fat,
+      calories: row.calories,
+    },
   };
 }
 
@@ -67,11 +75,25 @@ function mapMealFood(row: MealFoodRow): MealFoodDetail {
   };
 }
 
+/**
+ * Sums the macros of every meal, so the diet list can show the day in total
+ * without loading each meal's foods.
+ */
+const MEAL_TOTALS_SELECT = `COALESCE(SUM(f.protein * mf.quantity / NULLIF(f.measure_quantity, 0)), 0) AS protein,
+       COALESCE(SUM(f.carbs * mf.quantity / NULLIF(f.measure_quantity, 0)), 0) AS carbs,
+       COALESCE(SUM(f.fat * mf.quantity / NULLIF(f.measure_quantity, 0)), 0) AS fat,
+       COALESCE(SUM(f.calories * mf.quantity / NULLIF(f.measure_quantity, 0)), 0) AS calories`;
+
+const MEAL_TOTALS_JOINS = `LEFT JOIN meal_foods mf ON mf.meal_id = m.id
+       LEFT JOIN foods f ON f.id = mf.food_id`;
+
 export async function listMeals(): Promise<Meal[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<MealRow>(
-    `SELECT m.*, (SELECT COUNT(*) FROM meal_foods mf WHERE mf.meal_id = m.id) AS food_count
+    `SELECT m.*, ${MEAL_TOTALS_SELECT}
        FROM meals m
+       ${MEAL_TOTALS_JOINS}
+      GROUP BY m.id
       ORDER BY m.updated_at DESC, m.id DESC;`,
   );
   return rows.map(mapRow);
@@ -80,9 +102,11 @@ export async function listMeals(): Promise<Meal[]> {
 export async function getMeal(id: number): Promise<Meal | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<MealRow>(
-    `SELECT m.*, (SELECT COUNT(*) FROM meal_foods mf WHERE mf.meal_id = m.id) AS food_count
+    `SELECT m.*, ${MEAL_TOTALS_SELECT}
        FROM meals m
-      WHERE m.id = ?;`,
+       ${MEAL_TOTALS_JOINS}
+      WHERE m.id = ?
+      GROUP BY m.id;`,
     id,
   );
   return row ? mapRow(row) : null;
@@ -110,6 +134,19 @@ export function sumMacros(items: Pick<MealFoodDetail, 'factor' | 'protein' | 'ca
       carbs: totals.carbs + item.carbs * item.factor,
       fat: totals.fat + item.fat * item.factor,
       calories: totals.calories + item.calories * item.factor,
+    }),
+    { ...EMPTY_TOTALS },
+  );
+}
+
+/** Sums a list of meals into diet level totals. */
+export function sumMealTotals(meals: Pick<Meal, 'totals'>[]): MacroTotals {
+  return meals.reduce<MacroTotals>(
+    (totals, meal) => ({
+      protein: totals.protein + meal.totals.protein,
+      carbs: totals.carbs + meal.totals.carbs,
+      fat: totals.fat + meal.totals.fat,
+      calories: totals.calories + meal.totals.calories,
     }),
     { ...EMPTY_TOTALS },
   );

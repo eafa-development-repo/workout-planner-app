@@ -1,9 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
+import { StyleSheet, View } from 'react-native';
 import { Fab, LoadingState } from '../../components/Button';
 import { EmptyState } from '../../components/Feedback';
+import { FilterChips } from '../../components/FilterChips';
 import { ListScrollView } from '../../components/Layout';
 import { ListGroup, ListRow } from '../../components/ListRow';
 import { useQuery } from '../../hooks/useQuery';
@@ -11,13 +11,11 @@ import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import type { RootStackScreenProps } from '../../navigation/types';
 import { listExercises } from '../../repositories/exerciseRepository';
 import { MUSCLE_GROUPS, type Exercise, type MuscleGroup } from '../../db/types';
-import { colors } from '../../theme/colors';
-import { radius, spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 type Filter = MuscleGroup | 'All';
 
-const FILTERS: Filter[] = ['All', ...MUSCLE_GROUPS];
+const FILTERS: readonly Filter[] = ['All', ...MUSCLE_GROUPS];
 
 export function ExercisesListSection() {
   const nav = useNavigation<RootStackScreenProps<'Tabs'>['navigation']>();
@@ -73,35 +71,18 @@ export function ExercisesListSection() {
 
   return (
     <View style={styles.section}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {FILTERS.map((option) => {
-          const active = option === filter;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => setFilter(option)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              style={({ pressed }) => [
-                styles.chip,
-                active && styles.chipActive,
-                pressed && styles.chipPressed,
-              ]}
-            >
-              <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{option}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <FilterChips
+        options={FILTERS}
+        value={filter}
+        onChange={setFilter}
+        style={styles.filterRow}
+        accessibilityLabel="Filter exercises by muscle group"
+      />
 
       {loading && data.length === 0 ? (
         <LoadingState label="Loading exercises…" />
       ) : (
-        <ListScrollView>{list}</ListScrollView>
+        <ListScrollView horizontal={false}>{list}</ListScrollView>
       )}
 
       <Fab accessibilityLabel="Create exercise" onPress={() => nav.navigate('ExerciseForm', {})} />
@@ -114,30 +95,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   filterRow: {
-    gap: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
-  },
-  chipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  chipPressed: {
-    opacity: 0.7,
-  },
-  chipLabel: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  chipLabelActive: {
-    color: colors.textInverse,
+    paddingBottom: spacing.md,
   },
 });

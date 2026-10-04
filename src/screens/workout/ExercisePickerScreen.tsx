@@ -7,7 +7,7 @@ import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import { Screen } from '../../components/Layout';
 import type { RootStackScreenProps } from '../../navigation/types';
 import { listExercises } from '../../repositories/exerciseRepository';
-import type { Exercise } from '../../db/types';
+import { MUSCLE_GROUPS, type Exercise } from '../../db/types';
 import { emitAppEvent } from '../../utils/events';
 
 export function ExercisePickerScreen({ navigation }: RootStackScreenProps<'ExercisePicker'>) {
@@ -20,6 +20,7 @@ export function ExercisePickerScreen({ navigation }: RootStackScreenProps<'Exerc
     title: exercise.name,
     subtitle: exercise.muscleGroup,
     photoUri: exercise.photoUri,
+    filterKey: exercise.muscleGroup,
   }));
 
   const handleSelect = useCallback(
@@ -39,6 +40,8 @@ export function ExercisePickerScreen({ navigation }: RootStackScreenProps<'Exerc
         emptyTitle="No exercises available"
         emptyMessage="Create an exercise first, then add it to your workout."
         onSelect={handleSelect}
+        filters={MUSCLE_GROUPS}
+        filterLabel="All"
         header={
           <Button
             label="Create new exercise"
